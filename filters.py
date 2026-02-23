@@ -82,7 +82,6 @@ class ButterworthMultichannel:
             y = y_new
         return y
     
-    
 class SavitzkyGolay:
     def __init__(self, window_length, polyorder, deriv=0, delta=1.0):
         """

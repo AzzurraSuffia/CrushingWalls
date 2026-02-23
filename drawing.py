@@ -20,16 +20,16 @@ def draw_bounding_rectangle(mask, rectangle, color=(0, 255, 0), thickness=2, fil
     return mask_copy
 
 # DEBUG
-def draw_landmarks_on_image(rgb_image, landmarks, draw_connections=True):
+def draw_landmarks_on_image(rgb_image, pose_landmarks, draw_connections=True):
     annotated_image = rgb_image.copy()
 
     # Check if any poses were detected
-    if landmarks:
-        for pose_landmarks in landmarks:
+    if pose_landmarks:
+        for landmarks in pose_landmarks:
             # Convert normalized landmarks to pixel coordinates
             h, w, _ = annotated_image.shape
             landmark_points = []
-            for lm in pose_landmarks:
+            for lm in landmarks:
                 x, y = int(lm.x * w), int(lm.y * h)
                 landmark_points.append((x, y))
                 cv2.circle(annotated_image, (x, y), 3, (0, 255, 0), -1)  # small green dot
@@ -47,3 +47,36 @@ def draw_landmarks_on_image(rgb_image, landmarks, draw_connections=True):
                         cv2.line(annotated_image, landmark_points[start_idx], landmark_points[end_idx], (0, 255, 255), 2)
 
     return annotated_image
+
+def overlay_logo(frame, logo, center_x, center_y):
+    h_logo, w_logo = logo.shape[:2]
+
+    # Compute ROI coordinates in frame
+    y1 = max(center_y - h_logo//2, 0)
+    y2 = min(center_y + h_logo//2, frame.shape[0])
+    x1 = max(center_x - w_logo//2, 0)
+    x2 = min(center_x + w_logo//2, frame.shape[1])
+
+    # Crop the logo if ROI is smaller than logo
+    logo_y1 = 0
+    logo_y2 = y2 - y1
+    logo_x1 = 0
+    logo_x2 = x2 - x1
+
+    logo_crop = logo[logo_y1:logo_y2, logo_x1:logo_x2]
+
+    # Separate alpha channel
+    if logo_crop.shape[2] == 4:
+        logo_rgb = logo_crop[:, :, :3]
+        alpha = logo_crop[:, :, 3] / 255.0
+    else:
+        logo_rgb = logo_crop
+        alpha = np.ones((logo_crop.shape[0], logo_crop.shape[1]))
+
+    # Blend
+    roi = frame[y1:y2, x1:x2]
+    for c in range(3):
+        roi[:, :, c] = (alpha * logo_rgb[:, :, c] + (1 - alpha) * roi[:, :, c]).astype(np.uint8)
+
+    frame[y1:y2, x1:x2] = roi
+    return frame
