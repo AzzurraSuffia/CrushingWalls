@@ -1,21 +1,32 @@
 import cv2
 import sys
 import numpy as np
+import time
+
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-from utils import get_bounding_rectangle, is_user_ready
+from utils import get_bounding_rectangle, is_user_ready, compute_kinetic_energy
 from drawing import draw_landmarks_on_image, draw_bounding_rectangle, overlay_logo
 from filters import ButterworthMultichannel
 from body_landmarks import BodyLandmarks
+import masses
 
-# Constants
+# Constants (to be placed in a different file)
 fps = 30
 cutoff = 2.0
 order = 2
+total_mass = 80
 resize_frame_width = 800 # otherwise the screen is too little for visitors
 resize_frame_height = 600
+use_anthropometric_tables = True
+apply_ke_filtering = False
+
+# Initialization
+prev_detection = None
+prev_time = None
+curr_time = None
 
 # Creating a PoseLandmarker object
 base_options = python.BaseOptions(model_asset_path='models\\pose_landmarker_lite.task')
@@ -88,6 +99,20 @@ while True:
         cv2.rectangle(annotated_filtered_image, (bbox_right, 0), (resize_frame_width, resize_frame_height), (0, 165, 255), -1)  # right wall
 
         # compute kinetic energy
+        curr_time = time.time()
+
+        # Computing kinetic energy
+        if use_anthropometric_tables:
+            masses_vector = masses.create_mass_vector(total_mass)
+        else:
+            masses_vector = None
+        ke = compute_kinetic_energy(detection_result, prev_detection, 
+                                    prev_time, curr_time, masses_vector,
+                                    apply_ke_filtering)
+
+        # Updating
+        prev_detection = detection_result
+        prev_time = curr_time
 
         # plot the energy and threshold
 
