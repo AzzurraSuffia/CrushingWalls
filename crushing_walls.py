@@ -8,20 +8,26 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 from utils import get_bounding_rectangle, is_user_ready, compute_kinetic_energy
-from drawing import draw_landmarks_on_image, draw_bounding_rectangle, overlay_logo
+from drawing import draw_landmarks_on_image, draw_bounding_rectangle, overlay_logo, draw_energy_bar
 from filters import ButterworthMultichannel
 from body_landmarks import BodyLandmarks
 import masses
 
 # Constants (to be placed in a different file)
 fps = 30
-cutoff = 2.0
-order = 2
-total_mass = 80
+wall_cutoff = 2.0
+wall_order = 2
+velocity_cutoff = 2.0
+velocity_order = 2
+ke_cutoff = 2.0
+ke_order = 2
+total_mass = 80 # can mass be estimated somehow?
 resize_frame_width = 800 # otherwise the screen is too little for visitors
 resize_frame_height = 600
 use_anthropometric_tables = True
-apply_ke_filtering = False
+apply_ke_filtering = True
+max_ke = 150.0  # Adjust based on expected max kinetic energy
+ke_threshold = 0.15 # Adjust based on expected max kinetic energy
 
 # Initialization
 prev_detection = None
@@ -36,7 +42,9 @@ options = vision.PoseLandmarkerOptions(
 detector = vision.PoseLandmarker.create_from_options(options)
 
 # Creating filter
-wall_butterworth_filter = ButterworthMultichannel(2, order, cutoff, btype='lowpass', fs=fps)
+wall_butterworth_filter = ButterworthMultichannel(2, wall_order, wall_cutoff, btype='lowpass', fs=fps)
+velocity_butterworth_filter = ButterworthMultichannel(len(BodyLandmarks)*3, velocity_order, velocity_cutoff, btype='lowpass', fs=fps)
+ke_butterworth_filter = ButterworthMultichannel(1, velocity_order, velocity_cutoff, btype='lowpass', fs=fps)
 
 # Selecting the video camera as input source
 cap = cv2.VideoCapture(0)
@@ -108,13 +116,21 @@ while True:
             masses_vector = None
         ke = compute_kinetic_energy(detection_result, prev_detection, 
                                     prev_time, curr_time, masses_vector,
-                                    apply_ke_filtering)
+                                    apply_ke_filtering, velocity_butterworth_filter)
 
         # Updating
         prev_detection = detection_result
         prev_time = curr_time
 
+        if ke is None:
+            ke = 0
+        else: 
+            ke = ke / max_ke
+
+        ke = ke_butterworth_filter.filter(ke)
+
         # plot the energy and threshold
+        draw_energy_bar(annotated_filtered_image, ke, ke_threshold)
 
     else:
         annotated_filtered_image = cv2.GaussianBlur(current_frame, (15, 15), 0)

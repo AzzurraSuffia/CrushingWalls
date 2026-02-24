@@ -80,3 +80,44 @@ def overlay_logo(frame, logo, center_x, center_y):
 
     frame[y1:y2, x1:x2] = roi
     return frame
+
+def draw_energy_bar(frame, energy, threshold):
+
+    h, w, _ = frame.shape
+    bar_height = 25
+    margin = 20
+    bar_width = w - 2 * margin
+    x_start = margin
+    y_start = h - bar_height - margin
+
+    # Background bar
+    cv2.rectangle(frame,
+                  (x_start, y_start),
+                  (x_start + bar_width, y_start + bar_height),
+                  (50, 50, 50),
+                  -1)
+
+    # Energy bar
+    filled_width = int(bar_width * energy)
+
+    # Color depending on level
+    if energy > threshold:
+        color = (0, 200, 0)      # Green
+    else:
+        color = (0, 0, 255)      # Red
+
+    cv2.rectangle(frame,
+                  (x_start, y_start),
+                  (x_start + filled_width, y_start + bar_height),
+                  color,
+                  -1)
+
+    # Threshold line 
+    threshold_x = x_start + int(bar_width * threshold)
+    cv2.line(frame,
+             (threshold_x, y_start),
+             (threshold_x, y_start + bar_height),
+             (0, 0, 255),
+             2)
+
+    return frame
