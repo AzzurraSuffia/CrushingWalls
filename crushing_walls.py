@@ -12,22 +12,7 @@ from drawing import draw_landmarks_on_image, draw_bounding_rectangle, overlay_lo
 from filters import ButterworthMultichannel
 from body_landmarks import BodyLandmarks
 import masses
-
-# Constants (to be placed in a different file)
-fps = 30
-wall_cutoff = 2.0
-wall_order = 2
-velocity_cutoff = 2.0
-velocity_order = 2
-ke_cutoff = 2.0
-ke_order = 2
-total_mass = 80 # can mass be estimated somehow?
-resize_frame_width = 800 # otherwise the screen is too little for visitors
-resize_frame_height = 600
-use_anthropometric_tables = True
-apply_ke_filtering = True
-max_ke = 150.0  # Adjust based on expected max kinetic energy
-ke_threshold = 0.15 # Adjust based on expected max kinetic energy
+import constants
 
 # Initialization
 prev_detection = None
@@ -35,16 +20,16 @@ prev_time = None
 curr_time = None
 
 # Creating a PoseLandmarker object
-base_options = python.BaseOptions(model_asset_path='models\\pose_landmarker_lite.task')
+base_options = python.BaseOptions(model_asset_path=constants.MODEL_PATH)
 options = vision.PoseLandmarkerOptions(
     base_options=base_options,
     output_segmentation_masks=True)
 detector = vision.PoseLandmarker.create_from_options(options)
 
 # Creating filter
-wall_butterworth_filter = ButterworthMultichannel(2, wall_order, wall_cutoff, btype='lowpass', fs=fps)
-velocity_butterworth_filter = ButterworthMultichannel(len(BodyLandmarks)*3, velocity_order, velocity_cutoff, btype='lowpass', fs=fps)
-ke_butterworth_filter = ButterworthMultichannel(1, velocity_order, velocity_cutoff, btype='lowpass', fs=fps)
+wall_butterworth_filter = ButterworthMultichannel(2, constants.WALL_ORDER, constants.WALL_CUTOFF, btype='lowpass', fs=constants.FPS)
+velocity_butterworth_filter = ButterworthMultichannel(len(BodyLandmarks)*3, constants.VELOCITY_ORDER, constants.VELOCITY_CUTOFF, btype='lowpass', fs=constants.FPS)
+ke_butterworth_filter = ButterworthMultichannel(1, constants.KE_ORDER, constants.KE_CUTOFF, btype='lowpass', fs=constants.FPS)
 
 # Selecting the video camera as input source
 cap = cv2.VideoCapture(0)
@@ -55,7 +40,7 @@ if not cap.isOpened():
     print("Error in opening the video stream.")
     sys.exit()
 
-logo = cv2.imread("images\\logo.png", cv2.IMREAD_UNCHANGED)  # shape: (h, w, 4)
+logo = cv2.imread(constants.LOGO_PATH, cv2.IMREAD_UNCHANGED)
 
 while True:
     
@@ -67,7 +52,7 @@ while True:
     # image resize 
     # Note: MediaPipe internally resizes to 256x256
     # Leave this resize iff needed to speed other operations
-    current_frame = cv2.resize(current_frame, (resize_frame_width, resize_frame_height))
+    current_frame = cv2.resize(current_frame, (constants.RESIZE_W, constants.RESIZE_H))
     current_frame = cv2.flip(current_frame, 1) # mirror
 
     # For each frame, detect landmarks 
@@ -103,20 +88,20 @@ while True:
         bounding_rect = np.array([[bbox_left, bbox_top], [bbox_left, bbox_bottom], [bbox_right, bbox_bottom], [bbox_right, bbox_top]], dtype=np.int32)# DEBUG
         annotated_filtered_image = draw_bounding_rectangle(annotated_image, bounding_rect) # DEBUG
 
-        cv2.rectangle(annotated_filtered_image, (0, 0), (bbox_left, resize_frame_height), (255, 0, 0), -1)       # left wall
-        cv2.rectangle(annotated_filtered_image, (bbox_right, 0), (resize_frame_width, resize_frame_height), (0, 165, 255), -1)  # right wall
+        cv2.rectangle(annotated_filtered_image, (0, 0), (bbox_left, constants.RESIZE_H), (255, 0, 0), -1)       # left wall
+        cv2.rectangle(annotated_filtered_image, (bbox_right, 0), (constants.RESIZE_W, constants.RESIZE_H), (0, 165, 255), -1)  # right wall
 
         # compute kinetic energy
         curr_time = time.time()
 
         # Computing kinetic energy
-        if use_anthropometric_tables:
-            masses_vector = masses.create_mass_vector(total_mass)
+        if constants.USE_ANTHROPOMETRIC_TABLES:
+            masses_vector = masses.create_mass_vector(constants.TOTAL_MASS)
         else:
             masses_vector = None
         ke = compute_kinetic_energy(detection_result, prev_detection, 
                                     prev_time, curr_time, masses_vector,
-                                    apply_ke_filtering, velocity_butterworth_filter)
+                                    constants.APPLY_KE_FILTERING, velocity_butterworth_filter)
 
         # Updating
         prev_detection = detection_result
@@ -125,16 +110,16 @@ while True:
         if ke is None:
             ke = 0
         else: 
-            ke = ke / max_ke
+            ke = ke / constants.MAX_KE
 
         ke = ke_butterworth_filter.filter(ke)
 
         # plot the energy and threshold
-        draw_energy_bar(annotated_filtered_image, ke, ke_threshold)
+        draw_energy_bar(annotated_filtered_image, ke, constants.THRESHOLD_KE)
 
     else:
         annotated_filtered_image = cv2.GaussianBlur(current_frame, (15, 15), 0)
-        overlay_logo(annotated_filtered_image, logo, resize_frame_width // 2, resize_frame_height // 2)
+        overlay_logo(annotated_filtered_image, logo, constants.RESIZE_W // 2, constants.RESIZE_H // 2)
 
     cv2.imshow("Crashing Walls", annotated_filtered_image)
 
