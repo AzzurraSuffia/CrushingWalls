@@ -1,23 +1,17 @@
 import cv2
 import sys
-import numpy as np
-import time
 
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-from utils import get_bounding_rectangle, is_user_ready, compute_kinetic_energy
-from drawing import draw_landmarks_on_image, draw_bounding_rectangle, overlay_logo, draw_energy_bar
+from utils import get_bounding_rectangle, is_user_ready
+from drawing import draw_landmarks_on_image, draw_bounding_rectangle, overlay_logo, draw_energy_bar, draw_message, draw_walls
 from filters import ButterworthMultichannel
 from body_landmarks import BodyLandmarks
-import masses
+from interaction_fsm import InteractionFSM, State
+from ke_processor import KE_Processor
 import constants
-
-# Initialization
-prev_detection = None
-prev_time = None
-curr_time = None
 
 # Creating a PoseLandmarker object
 base_options = python.BaseOptions(model_asset_path=constants.MODEL_PATH)
@@ -42,9 +36,12 @@ if not cap.isOpened():
 
 logo = cv2.imread(constants.LOGO_PATH, cv2.IMREAD_UNCHANGED)
 
+mapping = InteractionFSM(max_count=constants.MAX_COUNT, max_close=constants.MAX_CLOSE, threshold=constants.THRESHOLD_KE)
+ke_processor = KE_Processor(velocity_butterworth_filter, ke_butterworth_filter) 
+
 while True:
     
-    # ------------------ Layer 1 ------------------
+    # ------------------ Layer 1 (Input) ------------------
     # Getting current frame
     success, current_frame = cap.read()
     if not success:
@@ -56,72 +53,56 @@ while True:
     current_frame = cv2.flip(current_frame, 1) # mirror
 
     # For each frame, detect landmarks 
-    #we change the image format for compatibility (some precious time is wasted)
+    # we change the image format for compatibility (some precious time is wasted)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=current_frame)
     detection_result = detector.detect(mp_image)
 
-    if len(detection_result.pose_landmarks) > 1:
-        # Text parameters
-        text = "WARNING: Someone is disturbing the game!"
-        position = (50, 50)             
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.8
-        color = (0, 0, 255)             
-        thickness = 2
+    # ------------------ Layer 2 (Input) ------------------
+    # Compute low-level features (bounding rectangle + kinetic energy)
+    bbox_left = None
+    bbox_right = None
+    ke = ke_processor.update(detection_result)
+    bbox = get_bounding_rectangle(current_frame, detection_result)
+    if bbox is not None:
+        smooth_bbox = wall_butterworth_filter.filter([bbox[0], bbox[1]])
+        bbox_left = int(smooth_bbox[0])
+        bbox_right = int(smooth_bbox[1])
+    
+    # ------------------ Direct Mapping ------------------
+    #TODO: use world landmarks for better accuracy for kinetic energy?
+    is_ready = is_user_ready(current_frame, detection_result)
+    current_state = mapping.update(detection_result.pose_landmarks, ke, is_ready, bbox_left, bbox_right) 
 
-        cv2.putText(current_frame, text, position, font, font_scale, color, thickness, cv2.LINE_AA)
-        
-    elif is_user_ready(current_frame, detection_result): # starting condition
-        
-        landmarks = detection_result.pose_landmarks[0] # pose world landmarks better for kinetic energy?
-        
-        #ADD: filter over landmark visibility
+    # ------------------ Layer 2 (Output) ------------------
+    match current_state:
+        case State.IDLE:
+            output_frame = cv2.GaussianBlur(current_frame, (15, 15), 0)
+            output_frame = overlay_logo(output_frame, logo, constants.RESIZE_W // 2, constants.RESIZE_H // 2)
 
-        annotated_image = draw_landmarks_on_image(current_frame, detection_result.pose_landmarks) # DEBUG
+        case State.PLAYING:
+            # DEBUG
+            import numpy as np
+            if bbox is not None:
+                bounding_rect = np.array([[bbox_left, bbox[3]], [bbox_left, bbox[2]], [bbox_right, bbox[2]], [bbox_right, bbox[3]]], dtype=np.int32)# DEBUG
+                current_frame = draw_bounding_rectangle(current_frame, bounding_rect) 
+            current_frame = draw_landmarks_on_image(current_frame, detection_result.pose_landmarks)
 
-        bbox_left, bbox_right, bbox_top, bbox_bottom = get_bounding_rectangle(current_frame, detection_result)
+            output_frame = draw_walls(current_frame, bbox_left, bbox_right)
+            output_frame = draw_energy_bar(output_frame, ke, constants.THRESHOLD_KE)
+    
+        case State.CLOSING:
+            t = mapping.close_counter / mapping.MAX
+            target = (mapping.closing_bbox_right_start - mapping.closing_bbox_left_start) // 2 + mapping.closing_bbox_left_start
+            left = int(mapping.closing_bbox_left_start * (1 - t) + target * t)
+            right = int(mapping.closing_bbox_right_start * (1 - t) + target * t)
 
-        #TRIAL: avoid jittering
-        smooth_bbox = wall_butterworth_filter.filter([bbox_left, bbox_right])
-        bbox_left = int(smooth_bbox [0])
-        bbox_right = int(smooth_bbox [1])
-        bounding_rect = np.array([[bbox_left, bbox_top], [bbox_left, bbox_bottom], [bbox_right, bbox_bottom], [bbox_right, bbox_top]], dtype=np.int32)# DEBUG
-        annotated_filtered_image = draw_bounding_rectangle(annotated_image, bounding_rect) # DEBUG
+            output_frame = draw_walls(current_frame, left, right)
 
-        cv2.rectangle(annotated_filtered_image, (0, 0), (bbox_left, constants.RESIZE_H), (255, 0, 0), -1)       # left wall
-        cv2.rectangle(annotated_filtered_image, (bbox_right, 0), (constants.RESIZE_W, constants.RESIZE_H), (0, 165, 255), -1)  # right wall
+        case State.INTERRUPTION:
+            output_frame = draw_message(current_frame, message="WARNING: Someone is disturbing the game!")
 
-        # compute kinetic energy
-        curr_time = time.time()
-
-        # Computing kinetic energy
-        if constants.USE_ANTHROPOMETRIC_TABLES:
-            masses_vector = masses.create_mass_vector(constants.TOTAL_MASS)
-        else:
-            masses_vector = None
-        ke = compute_kinetic_energy(detection_result, prev_detection, 
-                                    prev_time, curr_time, masses_vector,
-                                    constants.APPLY_KE_FILTERING, velocity_butterworth_filter)
-
-        # Updating
-        prev_detection = detection_result
-        prev_time = curr_time
-
-        if ke is None:
-            ke = 0
-        else: 
-            ke = ke / constants.MAX_KE
-
-        ke = ke_butterworth_filter.filter(ke)
-
-        # plot the energy and threshold
-        draw_energy_bar(annotated_filtered_image, ke, constants.THRESHOLD_KE)
-
-    else:
-        annotated_filtered_image = cv2.GaussianBlur(current_frame, (15, 15), 0)
-        overlay_logo(annotated_filtered_image, logo, constants.RESIZE_W // 2, constants.RESIZE_H // 2)
-
-    cv2.imshow("Crashing Walls", annotated_filtered_image)
+    # ------------------ Layer 1 (Output) ------------------
+    cv2.imshow("Crushing Walls", output_frame)
 
     if cv2.waitKey(1) & 0xFF==ord('q'): # quit when 'q' is pressed
         cap.release()

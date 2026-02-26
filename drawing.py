@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
 
+import constants
+
 # DEBUG
 def draw_bounding_rectangle(mask, rectangle, color=(0, 255, 0), thickness=2, fill=False):
     if rectangle is None or rectangle.shape != (4, 2):
@@ -90,6 +92,7 @@ def draw_energy_bar(frame, energy, threshold):
     x_start = margin
     y_start = h - bar_height - margin
 
+
     # Background bar
     cv2.rectangle(frame,
                   (x_start, y_start),
@@ -99,12 +102,7 @@ def draw_energy_bar(frame, energy, threshold):
 
     # Energy bar
     filled_width = int(bar_width * energy)
-
-    # Color depending on level
-    if energy > threshold:
-        color = (0, 200, 0)      # Green
-    else:
-        color = (0, 0, 255)      # Red
+    color = (0, 200, 0) if energy > threshold else (0, 0, 255)
 
     cv2.rectangle(frame,
                   (x_start, y_start),
@@ -112,7 +110,7 @@ def draw_energy_bar(frame, energy, threshold):
                   color,
                   -1)
 
-    # Threshold line 
+    # Threshold line
     threshold_x = x_start + int(bar_width * threshold)
     cv2.line(frame,
              (threshold_x, y_start),
@@ -120,4 +118,30 @@ def draw_energy_bar(frame, energy, threshold):
              (0, 0, 255),
              2)
 
+    # Label text ("Energy")
+    text = "Energy"
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.6
+    thickness = 2
+
+    # Position text above the bar
+    (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
+    text_x = x_start + (bar_width - text_w) // 2
+    text_y = y_start - 5  # slightly above the top of the bar
+
+    # Draw text in white with black outline for visibility
+    cv2.putText(frame, text, (text_x, text_y), font, font_scale, (0,0,0), thickness+2, cv2.LINE_AA)
+    cv2.putText(frame, text, (text_x, text_y), font, font_scale, (255,255,255), thickness, cv2.LINE_AA)
+
     return frame
+
+def draw_message(frame, message, 
+                 position = (50, 50), font = cv2.FONT_HERSHEY_SIMPLEX,
+                 font_scale = 0.8, color = (0, 0, 255), thickness = 2):
+
+    return cv2.putText(frame, message, position, font, font_scale, color, thickness, cv2.LINE_AA)
+
+def draw_walls(frame, bbox_left, bbox_right, color_left=(255, 0, 0), color_right=(0, 165, 255)):
+    output_frame = cv2.rectangle(frame, (0, 0), (bbox_left, constants.RESIZE_H), color_left, -1)       # left wall
+    output_frame = cv2.rectangle(frame, (bbox_right, 0), (constants.RESIZE_W, constants.RESIZE_H), color_right, -1)  # right wall
+    return output_frame
