@@ -13,6 +13,13 @@ from interaction_fsm import InteractionFSM, State
 from ke_processor import KE_Processor
 import constants
 
+
+#TODOLIST:
+#1. NOW THERE IS A BUG: intraction_fsm stops when no landmarks are detected, but landmarks are always passed by using the old landmarks. 
+#2. Should i make a counter over the landmarks updates when they are not present? How is this related to the state of user missing?
+#3. Kinetic energy varies strangely: investigate whether it is normal or not. If it is not normal, understand how to fix it.
+#4. (OPTIONAL) optimize the code by considering only the possible transitions given the state in which the system is and not all of them. 
+
 # Creating a PoseLandmarker object
 base_options = python.BaseOptions(model_asset_path=constants.MODEL_PATH)
 options = vision.PoseLandmarkerOptions(
@@ -56,6 +63,14 @@ while True:
     # we change the image format for compatibility (some precious time is wasted)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=current_frame)
     detection_result = detector.detect(mp_image)
+
+    #TODO: adjusting the outliers in landmarks should be done here and not during mapping phase.
+    # Why? Because if landmarks are none, energy is zero and even if you move, walls will crush. 
+    if mapping.state == State.PLAYING:
+        if not detection_result.pose_landmarks: # no landmark detected
+            detection_result.pose_landmarks.append(last_landmark) #TODO: this is outrageous, you should handle it better!!
+        else: 
+            last_landmark = detection_result.pose_landmarks[0]
 
     # ------------------ Layer 2 (Input) ------------------
     # Compute low-level features (bounding rectangle + kinetic energy)

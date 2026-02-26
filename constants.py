@@ -17,7 +17,7 @@ TOTAL_MASS = 80 # can mass be estimated somehow?
 USE_ANTHROPOMETRIC_TABLES = True
 APPLY_KE_FILTERING = True
 MAX_KE = 150.0  # Adjust based on expected max kinetic energy
-THRESHOLD_KE = 0.1 # Adjust based on expected max kinetic energy
+THRESHOLD_KE = 0.15 # Adjust based on expected max kinetic energy
 
 # Mediapipe
 MODEL_PATH="models\\pose_landmarker_lite.task"

@@ -27,9 +27,6 @@ class InteractionFSM:
         self.closing_bbox_left_start = None
         self.closing_bbox_right_start = None
 
-        self.landmarks = None
-        self.last_landmarks = None
-
     def update(self, pose_landmarks, energy, starting_condition_met, bbox_left, bbox_right):
         """
         Update FSM state based on current inputs.
@@ -42,7 +39,6 @@ class InteractionFSM:
                 self.disturb_counter += 1
                 self.energy_counter = 0
                 self.absence_counter = 0
-                self.last_landmark = pose_landmarks[0]
 
                 if self.disturb_counter >= self.MAX:
                     self.disturb_counter = 0
@@ -56,14 +52,11 @@ class InteractionFSM:
                 if self.absence_counter >= self.MAX:
                     self.absence_counter = 0
                     self.state = State.IDLE
-                else:
-                    self.landmarks = self.last_landmark  # optional handling
 
             elif energy < self.threshold:
                 self.energy_counter += 1
                 self.disturb_counter = 0
                 self.absence_counter = 0
-                self.last_landmark = pose_landmarks[0]
 
                 if self.energy_counter >= self.MAX:
                     self.energy_counter = 0
@@ -73,7 +66,6 @@ class InteractionFSM:
 
             else:
                 self._reset_activity_counters()
-                self.last_landmark = pose_landmarks[0]
 
         elif self.state == State.CLOSING:
 
