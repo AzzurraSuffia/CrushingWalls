@@ -83,7 +83,7 @@ def overlay_logo(frame, logo, center_x, center_y):
     frame[y1:y2, x1:x2] = roi
     return frame
 
-def draw_energy_bar(frame, energy, threshold):
+def draw_energy_bar(frame, ke_raw, threshold, ke_display):
 
     h, w, _ = frame.shape
     bar_height = 25
@@ -92,7 +92,6 @@ def draw_energy_bar(frame, energy, threshold):
     x_start = margin
     y_start = h - bar_height - margin
 
-
     # Background bar
     cv2.rectangle(frame,
                   (x_start, y_start),
@@ -100,9 +99,13 @@ def draw_energy_bar(frame, energy, threshold):
                   (50, 50, 50),
                   -1)
 
+    # Exponential Moving Average (EMA)
+    alpha = 0.1   
+    ke_display = alpha * ke_raw + (1 - alpha) * ke_display
+
     # Energy bar
-    filled_width = int(bar_width * energy)
-    color = (0, 200, 0) if energy > threshold else (0, 0, 255)
+    filled_width = int(bar_width * ke_display)
+    color = (0, 200, 0) if ke_display > threshold else (0, 0, 255)
 
     cv2.rectangle(frame,
                   (x_start, y_start),
@@ -133,7 +136,7 @@ def draw_energy_bar(frame, energy, threshold):
     cv2.putText(frame, text, (text_x, text_y), font, font_scale, (0,0,0), thickness+2, cv2.LINE_AA)
     cv2.putText(frame, text, (text_x, text_y), font, font_scale, (255,255,255), thickness, cv2.LINE_AA)
 
-    return frame
+    return frame, ke_display
 
 def draw_message(frame, message, 
                  position = (50, 50), font = cv2.FONT_HERSHEY_SIMPLEX,
@@ -157,7 +160,7 @@ def stack_images_horizontal(images, scale=1.0):
     return cv2.hconcat(resized_images)
 
 # DEBUG
-def draw_cv_graph(history, width=640, height=480, max_value = 2.0, fps = 25, window_length = 5, y_label="y", threshold = 30):
+def draw_cv_graph(history, landmarks_history, detection_result=None, width=640, height=480, max_value = 2.0, fps = 25, window_length = 5, y_label="y", threshold = 30):
     graph = np.ones((height, width, 3), dtype=np.uint8) * 255  # white background
 
     # Axes
@@ -206,6 +209,10 @@ def draw_cv_graph(history, width=640, height=480, max_value = 2.0, fps = 25, win
             y2 = int(height - 40 - (min(history[i], max_value) / max_value) * (height - 50))
 
             cv2.line(graph, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+            # Mark missing landmarks (None or empty)
+            if landmarks_history[i] is None:
+                cv2.circle(graph, (x2, y2), 5, (0, 0, 0), -1)
 
     # Axis labels
     cv2.putText(graph, y_label, (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 50, 50), 1)

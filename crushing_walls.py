@@ -15,12 +15,20 @@ from ke_processor import KE_Processor
 from body_estimator import BodyEstimator
 import constants
 
-#TODOLIST:
-#1. Kinetic energy varies a lot (alpha too high?): investigate whether it is normal or not. If it is not normal, understand how to fix it. Check also landmarks. 
+# NOTES:
+# Kinetic energy varies a lot: investigate whether it is normal or not. -> It is normal.
+
+# TODOLIST:
+#1. Kinetic energy was sometimes negative and it was due to the buttwrworth filter applied after squaring. New problem: how do i manage the energy bar?
+#   A possible solution may be to introduce the centered derivative for velocity
 #2. (OPTIONAL) optimize the code by considering only the possible transitions given the state in which the system is and not all of them. 
+
+#Initialization
+ke_display = 0.0
 
 if constants.DEBUG_KE:
     ke_history = deque(maxlen=constants.FPS*constants.PLOT_WINDOW_SECONDS)
+    landmarks_history = deque(maxlen=constants.FPS*constants.PLOT_WINDOW_SECONDS)
 
 # Creating a PoseLandmarker object
 base_options = python.BaseOptions(model_asset_path=constants.MODEL_PATH)
@@ -29,10 +37,9 @@ options = vision.PoseLandmarkerOptions(
     output_segmentation_masks=True)
 detector = vision.PoseLandmarker.create_from_options(options)
 
-# Creating filter
+# Creating filters
 wall_butterworth_filter = ButterworthMultichannel(2, constants.WALL_ORDER, constants.WALL_CUTOFF, btype='lowpass', fs=constants.FPS)
 velocity_butterworth_filter = ButterworthMultichannel(len(BodyLandmarks)*3, constants.VELOCITY_ORDER, constants.VELOCITY_CUTOFF, btype='lowpass', fs=constants.FPS)
-ke_butterworth_filter = ButterworthMultichannel(1, constants.KE_ORDER, constants.KE_CUTOFF, btype='lowpass', fs=constants.FPS)
 
 # Selecting the video camera as input source
 cap = cv2.VideoCapture(0)
@@ -46,7 +53,7 @@ if not cap.isOpened():
 logo = cv2.imread(constants.LOGO_PATH, cv2.IMREAD_UNCHANGED)
 
 mapping = InteractionFSM(max_count=constants.MAX_COUNT, max_close=constants.MAX_CLOSE, threshold=constants.THRESHOLD_KE)
-ke_processor = KE_Processor(velocity_butterworth_filter, ke_butterworth_filter) 
+ke_processor = KE_Processor(velocity_butterworth_filter) 
 body_estimator = BodyEstimator(constants.ALPHA)
 
 while True:
@@ -67,7 +74,7 @@ while True:
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=current_frame)
     detection_result = detector.detect(mp_image)
 
-    #filter on landmark visibility
+    # TODO: filter on landmark visibility
 
     # ------------------ Layer 2 (Input) ------------------
     # Compute low-level features (bounding rectangle + kinetic energy)
@@ -79,6 +86,7 @@ while True:
     #DEBUG
     if constants.DEBUG_KE:
         ke_history.append(ke*constants.MAX_KE) if ke is not None else ke_history.append(0.0)
+        landmarks_history.append(landmarks)
         
     bbox = get_bounding_rectangle(current_frame, landmarks)
     if bbox is not None:
@@ -106,7 +114,7 @@ while True:
             current_frame = draw_landmarks_on_image(current_frame, detection_result.pose_landmarks)
 
             output_frame = draw_walls(current_frame, bbox_left, bbox_right)
-            output_frame = draw_energy_bar(output_frame, ke, constants.THRESHOLD_KE)
+            output_frame, ke_display = draw_energy_bar(output_frame, ke, constants.THRESHOLD_KE, ke_display)
     
         case State.CLOSING:
             t = mapping.close_counter / mapping.MAX
@@ -123,9 +131,10 @@ while True:
 
     #DEBUG
     if constants.DEBUG_KE:
-        ke_graph_image = draw_cv_graph(ke_history, output_frame.shape[1], output_frame.shape[0], 
-                                       constants.MAX_KE, constants.FPS, constants.PLOT_WINDOW_SECONDS, 
-                                       "Kinetic Energy")
+        ke_graph_image = draw_cv_graph(ke_history, landmarks_history, detection_result, output_frame.shape[1], output_frame.shape[0], 
+                                       constants.MAX_KE, constants.FPS, constants.PLOT_WINDOW_SECONDS, y_label="Kinetic Energy", 
+                                       threshold=constants.THRESHOLD_KE*constants.MAX_KE)
+                                       
         output_frame = stack_images_horizontal([output_frame, ke_graph_image])
 
     cv2.imshow("Crushing Walls", output_frame)

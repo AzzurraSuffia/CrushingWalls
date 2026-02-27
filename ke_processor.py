@@ -5,10 +5,9 @@ import masses
 
 class KE_Processor:
 
-    def __init__(self, velocity_filter, ke_filter):
+    def __init__(self, velocity_filter):
 
         self.velocity_filter = velocity_filter
-        self.ke_filter = ke_filter
 
         self.prev_detection = None
         self.prev_time = None
@@ -31,9 +30,6 @@ class KE_Processor:
             ke = 0.0
         else:
             ke = ke / constants.MAX_KE
-
-        # Final filtering
-        ke = self.ke_filter.filter(ke)
 
         return ke
     
