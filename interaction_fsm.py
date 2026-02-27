@@ -21,7 +21,6 @@ class InteractionFSM:
         self.ready_counter = 0
         self.energy_counter = 0
         self.disturb_counter = 0
-        self.absence_counter = 0
         self.close_counter = 0
 
         self.closing_bbox_left_start = None
@@ -38,25 +37,17 @@ class InteractionFSM:
             if len(pose_landmarks) > 1:
                 self.disturb_counter += 1
                 self.energy_counter = 0
-                self.absence_counter = 0
 
                 if self.disturb_counter >= self.MAX:
                     self.disturb_counter = 0
                     self.state = State.INTERRUPTION
 
             elif not pose_landmarks:
-                self.absence_counter += 1
-                self.energy_counter = 0
-                self.disturb_counter = 0
-
-                if self.absence_counter >= self.MAX:
-                    self.absence_counter = 0
-                    self.state = State.IDLE
+                self.state = State.IDLE
 
             elif energy < self.threshold:
                 self.energy_counter += 1
                 self.disturb_counter = 0
-                self.absence_counter = 0
 
                 if self.energy_counter >= self.MAX:
                     self.energy_counter = 0
@@ -89,4 +80,3 @@ class InteractionFSM:
     def _reset_activity_counters(self):
         self.disturb_counter = 0
         self.energy_counter = 0
-        self.absence_counter = 0

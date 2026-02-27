@@ -1,24 +1,26 @@
 import cv2
 import sys
+from collections import deque
 
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 from utils import get_bounding_rectangle, is_user_ready
-from drawing import draw_landmarks_on_image, draw_bounding_rectangle, overlay_logo, draw_energy_bar, draw_message, draw_walls
+from drawing import draw_landmarks_on_image, draw_bounding_rectangle, overlay_logo, draw_energy_bar, draw_message, draw_walls, stack_images_horizontal, draw_cv_graph
 from filters import ButterworthMultichannel
 from body_landmarks import BodyLandmarks
 from interaction_fsm import InteractionFSM, State
 from ke_processor import KE_Processor
+from body_estimator import BodyEstimator
 import constants
 
-
 #TODOLIST:
-#1. NOW THERE IS A BUG: intraction_fsm stops when no landmarks are detected, but landmarks are always passed by using the old landmarks. 
-#2. Should i make a counter over the landmarks updates when they are not present? How is this related to the state of user missing?
-#3. Kinetic energy varies strangely: investigate whether it is normal or not. If it is not normal, understand how to fix it.
-#4. (OPTIONAL) optimize the code by considering only the possible transitions given the state in which the system is and not all of them. 
+#1. Kinetic energy varies a lot (alpha too high?): investigate whether it is normal or not. If it is not normal, understand how to fix it. Check also landmarks. 
+#2. (OPTIONAL) optimize the code by considering only the possible transitions given the state in which the system is and not all of them. 
+
+if constants.DEBUG_KE:
+    ke_history = deque(maxlen=constants.FPS*constants.PLOT_WINDOW_SECONDS)
 
 # Creating a PoseLandmarker object
 base_options = python.BaseOptions(model_asset_path=constants.MODEL_PATH)
@@ -45,6 +47,7 @@ logo = cv2.imread(constants.LOGO_PATH, cv2.IMREAD_UNCHANGED)
 
 mapping = InteractionFSM(max_count=constants.MAX_COUNT, max_close=constants.MAX_CLOSE, threshold=constants.THRESHOLD_KE)
 ke_processor = KE_Processor(velocity_butterworth_filter, ke_butterworth_filter) 
+body_estimator = BodyEstimator(constants.ALPHA)
 
 while True:
     
@@ -64,20 +67,20 @@ while True:
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=current_frame)
     detection_result = detector.detect(mp_image)
 
-    #TODO: adjusting the outliers in landmarks should be done here and not during mapping phase.
-    # Why? Because if landmarks are none, energy is zero and even if you move, walls will crush. 
-    if mapping.state == State.PLAYING:
-        if not detection_result.pose_landmarks: # no landmark detected
-            detection_result.pose_landmarks.append(last_landmark) #TODO: this is outrageous, you should handle it better!!
-        else: 
-            last_landmark = detection_result.pose_landmarks[0]
+    #filter on landmark visibility
 
     # ------------------ Layer 2 (Input) ------------------
     # Compute low-level features (bounding rectangle + kinetic energy)
     bbox_left = None
     bbox_right = None
-    ke = ke_processor.update(detection_result)
-    bbox = get_bounding_rectangle(current_frame, detection_result)
+    velocities, landmarks = body_estimator.update(detection_result)
+    ke = ke_processor.update(landmarks, velocities)
+    
+    #DEBUG
+    if constants.DEBUG_KE:
+        ke_history.append(ke*constants.MAX_KE) if ke is not None else ke_history.append(0.0)
+        
+    bbox = get_bounding_rectangle(current_frame, landmarks)
     if bbox is not None:
         smooth_bbox = wall_butterworth_filter.filter([bbox[0], bbox[1]])
         bbox_left = int(smooth_bbox[0])
@@ -85,7 +88,7 @@ while True:
     
     # ------------------ Direct Mapping ------------------
     #TODO: use world landmarks for better accuracy for kinetic energy?
-    is_ready = is_user_ready(current_frame, detection_result)
+    is_ready = is_user_ready(current_frame, landmarks)
     current_state = mapping.update(detection_result.pose_landmarks, ke, is_ready, bbox_left, bbox_right) 
 
     # ------------------ Layer 2 (Output) ------------------
@@ -117,6 +120,14 @@ while True:
             output_frame = draw_message(current_frame, message="WARNING: Someone is disturbing the game!")
 
     # ------------------ Layer 1 (Output) ------------------
+
+    #DEBUG
+    if constants.DEBUG_KE:
+        ke_graph_image = draw_cv_graph(ke_history, output_frame.shape[1], output_frame.shape[0], 
+                                       constants.MAX_KE, constants.FPS, constants.PLOT_WINDOW_SECONDS, 
+                                       "Kinetic Energy")
+        output_frame = stack_images_horizontal([output_frame, ke_graph_image])
+
     cv2.imshow("Crushing Walls", output_frame)
 
     if cv2.waitKey(1) & 0xFF==ord('q'): # quit when 'q' is pressed

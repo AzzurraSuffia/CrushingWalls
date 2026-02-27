@@ -1,14 +1,14 @@
 import numpy as np
 import cv2
 
-def get_bounding_rectangle(rgb_image, detection_result):
-    if not detection_result or not detection_result.pose_landmarks:
+def get_bounding_rectangle(rgb_image, landmarks):
+    if not landmarks or landmarks is None:
         return None
 
     height, width, _ = rgb_image.shape
 
-    xs = [lm.x for lm in detection_result.pose_landmarks[0]]
-    ys = [lm.y for lm in detection_result.pose_landmarks[0]]
+    xs = [lm.x for lm in landmarks]
+    ys = [lm.y for lm in landmarks]
 
     bbox_left = int(min(xs) * width)
     bbox_right = int(max(xs) * width)
@@ -18,11 +18,9 @@ def get_bounding_rectangle(rgb_image, detection_result):
 
     return bbox
 
-def is_user_ready(frame, detection_result):
-    if not detection_result.pose_landmarks: # nobody detected
+def is_user_ready(frame, landmarks):
+    if not landmarks or landmarks is None:
         return False
-    
-    landmarks = detection_result.pose_landmarks[0]
 
     # Condition 1. Upper body landmarks are visible
     VISIBILITY_THRESHOLD = 0.5

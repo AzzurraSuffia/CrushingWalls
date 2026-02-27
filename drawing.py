@@ -145,3 +145,70 @@ def draw_walls(frame, bbox_left, bbox_right, color_left=(255, 0, 0), color_right
     output_frame = cv2.rectangle(frame, (0, 0), (bbox_left, constants.RESIZE_H), color_left, -1)       # left wall
     output_frame = cv2.rectangle(frame, (bbox_right, 0), (constants.RESIZE_W, constants.RESIZE_H), color_right, -1)  # right wall
     return output_frame
+
+# DEBUG
+def stack_images_horizontal(images, scale=1.0):
+    resized_images = []
+    for img in images:
+        if len(img.shape) == 2:  # grayscale
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        img = cv2.resize(img, None, fx=scale, fy=scale)
+        resized_images.append(img)
+    return cv2.hconcat(resized_images)
+
+# DEBUG
+def draw_cv_graph(history, width=640, height=480, max_value = 2.0, fps = 25, window_length = 5, y_label="y", threshold = 30):
+    graph = np.ones((height, width, 3), dtype=np.uint8) * 255  # white background
+
+    # Axes
+    cv2.line(graph, (50, 0), (50, height - 40), (0, 0, 0), 1)  # y-axis
+    cv2.line(graph, (50, height - 40), (width, height - 40), (0, 0, 0), 1)  # x-axis
+
+    # Y-axis labels (fixed range)
+    for i in range(5):
+        y_value = max_value * i / 4
+        y_pos = int(height - 40 - (y_value / max_value) * (height - 50))
+        label = f"{y_value:.1f}"
+        cv2.putText(graph, label, (5, y_pos + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1)
+
+    # X-axis time ticks
+    history_length = fps * window_length
+    seconds_range = history_length / fps
+    tick_px = (width - 50) / seconds_range
+
+    for i in range(int(seconds_range) + 1):
+        x = int(50 + i * tick_px)
+        cv2.line(graph, (x, height - 40), (x, height - 35), (0, 0, 0), 1)
+        cv2.putText(graph, f"{i}s", (x - 10, height - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1)
+
+    if threshold is not None:
+        thr_value = min(threshold, max_value)
+        y_thr = int(height - 40 - (thr_value / max_value) * (height - 50))
+
+        # Draw horizontal line
+        cv2.line(graph, (50, y_thr), (width, y_thr), (0, 150, 0), 2)
+
+        # Label threshold
+        cv2.putText(graph, f"thr={threshold:.2f}", 
+                    (width - 120, y_thr - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 
+                    0.4, 
+                    (0, 150, 0), 
+                    1)
+        
+    # Plot line
+    if len(history) >= 2:
+        for i in range(1, len(history)):
+            x1 = int(50 + (i - 1) / history_length * (width - 50))
+            x2 = int(50 + i / history_length * (width - 50))
+
+            y1 = int(height - 40 - (min(history[i - 1], max_value) / max_value) * (height - 50))
+            y2 = int(height - 40 - (min(history[i], max_value) / max_value) * (height - 50))
+
+            cv2.line(graph, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+    # Axis labels
+    cv2.putText(graph, y_label, (15, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 50, 50), 1)
+    cv2.putText(graph, "Time (s)", (width // 2, height - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 50, 50), 1)
+
+    return graph

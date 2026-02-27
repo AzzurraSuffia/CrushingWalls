@@ -16,7 +16,7 @@ KE_ORDER = 2
 TOTAL_MASS = 80 # can mass be estimated somehow?
 USE_ANTHROPOMETRIC_TABLES = True
 APPLY_KE_FILTERING = True
-MAX_KE = 150.0  # Adjust based on expected max kinetic energy
+MAX_KE = 200.0  # Adjust based on expected max kinetic energy
 THRESHOLD_KE = 0.15 # Adjust based on expected max kinetic energy
 
 # Mediapipe
@@ -29,3 +29,10 @@ LOGO_PATH="images\\logo.png"
 MAX_COUNT = FPS // 2
 MAX_CLOSE_SECONDS = 0.5
 MAX_CLOSE = int(MAX_CLOSE_SECONDS * FPS) 
+
+# Velocity Decay
+ALPHA = 0.9
+
+# Debug energy
+DEBUG_KE = True
+PLOT_WINDOW_SECONDS = 5
