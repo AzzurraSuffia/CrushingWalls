@@ -26,7 +26,7 @@ class InteractionFSM:
         self.closing_bbox_left_start = None
         self.closing_bbox_right_start = None
 
-    def update(self, pose_landmarks, energy, starting_condition_met, bbox_left, bbox_right):
+    def update(self, pose_landmarks, estimated_landmarks, energy, starting_condition_met, bbox_left, bbox_right):
         """
         Update FSM state based on current inputs.
         Returns the current state.
@@ -42,7 +42,7 @@ class InteractionFSM:
                     self.disturb_counter = 0
                     self.state = State.INTERRUPTION
 
-            elif not pose_landmarks:
+            elif not estimated_landmarks:
                 self.state = State.IDLE
 
             elif energy < self.threshold:

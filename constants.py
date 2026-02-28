@@ -24,9 +24,10 @@ MODEL_PATH="models\\pose_landmarker_lite.task"
 LOGO_PATH="images\\logo.png"
 
 # Mapping 
-MAX_COUNT = FPS // 2
-MAX_CLOSE_SECONDS = 0.5
+MAX_COUNT = FPS * 0.8
+MAX_CLOSE_SECONDS = 1
 MAX_CLOSE = int(MAX_CLOSE_SECONDS * FPS) 
+CLOSED_PAUSE = 5
 
 # Velocity Decay
 ALPHA = 0.9
@@ -34,3 +35,10 @@ ALPHA = 0.9
 # Debug energy
 DEBUG_KE = True
 PLOT_WINDOW_SECONDS = 5
+
+# Center region
+CENTER_X_MIN = 0.40
+CENTER_X_MAX = 0.60
+CENTER_Y_MIN = 0.30
+CENTER_Y_MAX = 0.70
+VISIBILITY_THRESHOLD = 0.5

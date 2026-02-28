@@ -1,5 +1,5 @@
 import numpy as np
-import cv2
+import constants
 
 def get_bounding_rectangle(rgb_image, landmarks):
     if not landmarks or landmarks is None:
@@ -23,24 +23,23 @@ def is_user_ready(frame, landmarks):
         return False
 
     # Condition 1. Upper body landmarks are visible
-    VISIBILITY_THRESHOLD = 0.5
-
     # left shoulder, right should, left hip, right hip
     torso_landmarks = [landmarks[11], landmarks[12], landmarks[23], landmarks[24]]
     head_landmarks = [landmarks[0]]
 
-    torso_visible = all(lm.visibility > VISIBILITY_THRESHOLD for lm in torso_landmarks)
-    head_visible = all(lm.visibility > VISIBILITY_THRESHOLD for lm in head_landmarks)
+    torso_visible = all(lm.visibility > constants.VISIBILITY_THRESHOLD for lm in torso_landmarks)
+    head_visible = all(lm.visibility > constants.VISIBILITY_THRESHOLD for lm in head_landmarks)
 
     all_visible = torso_visible and head_visible
 
-    # Condition 2. Upper body centroid is in the center region
+    # Condition2. Upper body centroid is in the center region
+    
     h, w, _ = frame.shape
 
-    center_x_min = 0.35 * w
-    center_x_max = 0.65 * w
-    center_y_min = 0.25 * h
-    center_y_max = 0.75 * h
+    center_x_min = constants.CENTER_X_MIN * w
+    center_x_max = constants.CENTER_X_MAX * w
+    center_y_min = constants.CENTER_Y_MIN * h
+    center_y_max = constants.CENTER_Y_MAX * h
 
     xs = [lm.x * w for lm in torso_landmarks]
     ys = [lm.y * h for lm in torso_landmarks]
@@ -53,3 +52,15 @@ def is_user_ready(frame, landmarks):
 
     # Result
     return all_visible and in_center_x and in_center_y
+
+def compute_wall_positions(mapping):
+    target = (mapping.closing_bbox_right_start - mapping.closing_bbox_left_start) // 2 + mapping.closing_bbox_left_start
+
+    if mapping.close_counter <= mapping.MAX_CLOSE - constants.CLOSED_PAUSE:
+        t = mapping.close_counter / (mapping.MAX_CLOSE - constants.CLOSED_PAUSE)
+        left = int(mapping.closing_bbox_left_start * (1 - t) + target * t)
+        right = int(mapping.closing_bbox_right_start * (1 - t) + target * t)
+    else: # hold wall closed for a little
+        left = right = int(target)
+
+    return left, right

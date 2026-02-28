@@ -16,9 +16,7 @@ class KE_Processor:
 
         # Mass vector
         if constants.USE_ANTHROPOMETRIC_TABLES:
-            masses_vector = masses.create_mass_vector(
-                constants.TOTAL_MASS
-            )
+            masses_vector = masses.create_mass_vector(constants.TOTAL_MASS)
         else:
             masses_vector = None
 
