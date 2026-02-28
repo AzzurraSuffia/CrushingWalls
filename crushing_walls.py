@@ -28,6 +28,8 @@ import constants
 
 #Initialization
 ke_display = 0.0
+first_frame_set = False
+background = None
 
 if constants.DEBUG_KE:
     ke_history = deque(maxlen=constants.FPS*constants.PLOT_WINDOW_SECONDS)
@@ -78,6 +80,12 @@ while True:
     current_frame = cv2.resize(current_frame, (constants.RESIZE_W, constants.RESIZE_H))
     current_frame = cv2.flip(current_frame, 1) # mirror
 
+    if not first_frame_set:
+        background = current_frame
+        first_frame_set = True
+        print("First frame taken as the initial background.")
+        continue
+
     # For each frame, detect landmarks 
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=current_frame)
     detection_result = detector.detect(mp_image)
@@ -124,7 +132,8 @@ while True:
     
         case State.CLOSING:
             left, right = compute_wall_positions(mapping)
-            output_frame = draw_walls(current_frame, left, right)
+            output_frame = background.copy()
+            output_frame = draw_walls(output_frame, left, right)
 
         case State.INTERRUPTION:
             output_frame = draw_message(current_frame, message="WARNING: Someone is disturbing the game!")
