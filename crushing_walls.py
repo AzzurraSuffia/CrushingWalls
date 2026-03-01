@@ -19,9 +19,11 @@ import constants
 # Kinetic energy varies a lot: investigate whether it is normal or not. -> It is normal.
 
 # TODOLIST:
-#1. energy bar does not seems responsive. Add a line for average ke on a window eventually.
-#2. tune parameters (like max counters and threshold for energy)
-#3. Test intrusions
+#0. Adjust order of checks after playing state which is wrong right now. 
+#1. Understand why velocity filter makes energy perception lower (should i lower the threshold?).
+#2. energy bar does not seems responsive. Add a line for average ke on a window eventually.
+#2. Test intrusions
+#3. tune parameters (like max counters and threshold for energy)
 
 #4. (OPTIONAL) optimize the code by considering only the possible transitions given the state in which the system is and not all of them. 
 # Then end, finally :)
@@ -56,7 +58,7 @@ logo = cv2.imread(constants.LOGO_PATH, cv2.IMREAD_UNCHANGED)
 # Instaciaing objects
 mapping = InteractionFSM(max_count=constants.MAX_COUNT, max_close=constants.MAX_CLOSE, threshold=constants.THRESHOLD_KE)
 ke_processor = KE_Processor(velocity_butterworth_filter) 
-body_estimator = BodyEstimator(constants.ALPHA)
+body_estimator = BodyEstimator(constants.ALPHA) # apply_filtering=True, velocity_filter=velocity_butterworth_filter
 
 # Selecting the video camera as input source
 cap = cv2.VideoCapture(0)

@@ -24,7 +24,7 @@ MODEL_PATH="models\\pose_landmarker_lite.task"
 LOGO_PATH="images\\logo.png"
 
 # Mapping 
-MAX_COUNT = FPS * 0.8
+MAX_COUNT = FPS
 MAX_CLOSE_SECONDS = 1
 MAX_CLOSE = int(MAX_CLOSE_SECONDS * FPS) 
 CLOSED_PAUSE = 5

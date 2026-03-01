@@ -2,6 +2,7 @@ from scipy.signal import butter, sosfilt_zi, sosfilt, savgol_coeffs
 from collections import deque
 import numpy as np
 
+
 class Butterworth:
     def __init__(self, order, cutoff, btype='lowpass', fs=1.0):
         """
@@ -33,9 +34,6 @@ class Butterworth:
         y, self.zi = sosfilt(self.sos, x, zi=self.zi)
         return y[0]
     
-
-    import numpy as np
-from scipy.signal import butter, sosfilt_zi
 
 class ButterworthMultichannel:
     """
