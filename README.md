@@ -26,27 +26,27 @@ git clone https://github.com/AzzurraSuffia/CrushingWalls.git
 ## Run the application
 To run the project:
 
-1. Navigate to the project folder:
-
-```bash
-cd <repository_folder>
-```
-2. Change input options:
+1. **Navigate to the project folder**:
+    ```bash
+    cd <repository_folder>
+    ```
+2. **Change input options**:
     - Live camera input: <br>
     Make sure the `LIVE_INPUT` constant in `config/constants.py` is set to `True`.
     - Pre-recorded video input: <br>
         1. Copy the video file into the `videos` folder.
-        2. Set the `VIDEO_PATH` constant in `config/constants.py` to the relative path of your video, e.g.:
-        ```bash
-        VIDEO_PATH = "videos\\my_video.mp4"
-        ```
-3. Set camera parameters and background: <br>
+        2. Set the `VIDEO_PATH` constant in `config/constants.py` to the relative path of your video, e.g.: <br>
+            ```bash
+            VIDEO_PATH = "videos\\my_video.mp4"
+            ```
+3. **Set camera parameters and background**: <br>
     - Adjust the `FPS` constant in `config/constants.py` to match your camera’s frame rate.
-    - To use a fixed background image, set it in `main.py` (resize the image to 640×480).
-Otherwise, the system will automatically capture the first frame as the background.
-4. (Optional) Enable debug mode:<br>
+    - To use a fixed background image, set it in `main.py` (resize the image to 640×480). Otherwise, the system will automatically capture the first frame as the background.
+4. **(Optional) Enable debug mode**:<br>
 Set the `DEBUG` constant in `config/constants.py` to `True` if you want extra debug output.
-5. Run the main script:
-```bash
-python src/main.py
-```
+5. **Run the main script**: <br>
+    ```bash
+    python src/main.py
+    ```
+6. **Start interacting**: <br>
+If live input is selected, position yourself in the center of the camera frame with your head and torso fully visible to start the interaction.
