@@ -11,10 +11,11 @@ class State(Enum):
 
 class InteractionFSM:
 
-    def __init__(self, max_count, max_close, threshold):
+    def __init__(self, max_count, max_energy, max_close, threshold):
         self.state = State.IDLE
 
         self.MAX = max_count
+        self.MAX_ENERGY = max_energy
         self.MAX_CLOSE = max_close
         self.threshold = threshold
 
@@ -34,6 +35,7 @@ class InteractionFSM:
 
         if self.state == State.PLAYING:
 
+            # Multiple users
             if len(pose_landmarks) > 1:
                 self.disturb_counter += 1
                 self.energy_counter = 0
@@ -42,14 +44,16 @@ class InteractionFSM:
                     self.disturb_counter = 0
                     self.state = State.INTERRUPTION
 
+            # Landmark detection failed
             elif not estimated_landmarks:
                 self.state = State.IDLE
 
+            # Low energy
             elif energy < self.threshold:
                 self.energy_counter += 1
                 self.disturb_counter = 0
 
-                if self.energy_counter >= self.MAX:
+                if self.energy_counter >= self.MAX_ENERGY:
                     self.energy_counter = 0
                     self.state = State.CLOSING
                     self.closing_bbox_left_start = bbox_left

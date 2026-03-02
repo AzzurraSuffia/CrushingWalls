@@ -21,7 +21,7 @@ class BodyEstimator:
         curr_time = time.time()
         estimated = False
 
-        # 1. No detection or first frame
+        # No detection or first frame
         if detection_result.pose_landmarks is None or len(detection_result.pose_landmarks) == 0:
             if self.prev_time is None or self.prev_landmarks is None or self.missing_counter >= self.max_missing_count:
                 velocities, landmarks, estimated = None, None, False
@@ -77,9 +77,12 @@ class BodyEstimator:
     
     def _predict_missing(self, curr_time):
         dt = curr_time - self.prev_time
-        velocities = self.alpha * self.prev_velocities # velocity decay
+
+        # Apply velocity decay
+        velocities = self.alpha * self.prev_velocities 
         landmarks = copy.deepcopy(self.prev_landmarks)
 
+        # Derive landmarks from velocities
         for v, lm in zip(velocities, landmarks):
             lm.x += v[0] * dt
             lm.y += v[1] * dt

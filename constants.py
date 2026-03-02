@@ -14,8 +14,8 @@ VELOCITY_ORDER = 2
 TOTAL_MASS = 80 # can mass be estimated somehow?
 USE_ANTHROPOMETRIC_TABLES = True
 APPLY_KE_FILTERING = True
-MAX_KE = 1000.0  # Adjust based on expected max kinetic energy
-THRESHOLD_KE = 0.1 # Adjust based on expected max kinetic energy
+MAX_KE = 100.0  # Adjust based on expected max kinetic energy
+THRESHOLD_KE = 0.1*MAX_KE # Adjust based on expected max kinetic energy
 
 # Mediapipe
 MODEL_PATH="models\\pose_landmarker_lite.task"
@@ -25,6 +25,8 @@ LOGO_PATH="images\\logo.png"
 
 # Mapping 
 MAX_COUNT = FPS
+MAX_ENERGY_SECONDS = 2
+MAX_ENERGY = int(MAX_ENERGY_SECONDS * FPS) 
 MAX_CLOSE_SECONDS = 1
 MAX_CLOSE = int(MAX_CLOSE_SECONDS * FPS) 
 CLOSED_PAUSE = 5
@@ -32,8 +34,8 @@ CLOSED_PAUSE = 5
 # Velocity Decay
 ALPHA = 0.9
 
-# Debug energy
-DEBUG_KE = True
+# Debug constants
+DEBUG = True
 PLOT_WINDOW_SECONDS = 5
 
 # Center region

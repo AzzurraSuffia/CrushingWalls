@@ -14,7 +14,7 @@ def get_bounding_rectangle(rgb_image, landmarks):
     bbox_right = int(max(xs) * width)
     bbox_top = int(min(ys) * height)
     bbox_bottom = int(max(ys) * height)
-    bbox = np.array([bbox_left, bbox_right, bbox_bottom, bbox_top], dtype=np.int32)# DEBUG
+    bbox = np.array([bbox_left, bbox_right, bbox_bottom, bbox_top], dtype=np.int32)
 
     return bbox
 
@@ -25,6 +25,7 @@ def is_user_ready(frame, landmarks):
     # Condition 1. Upper body landmarks are visible
     # left shoulder, right should, left hip, right hip
     torso_landmarks = [landmarks[11], landmarks[12], landmarks[23], landmarks[24]]
+    # nose
     head_landmarks = [landmarks[0]]
 
     torso_visible = all(lm.visibility > constants.VISIBILITY_THRESHOLD for lm in torso_landmarks)
@@ -33,7 +34,6 @@ def is_user_ready(frame, landmarks):
     all_visible = torso_visible and head_visible
 
     # Condition2. Upper body centroid is in the center region
-    
     h, w, _ = frame.shape
 
     center_x_min = constants.CENTER_X_MIN * w
@@ -54,13 +54,16 @@ def is_user_ready(frame, landmarks):
     return all_visible and in_center_x and in_center_y
 
 def compute_wall_positions(mapping):
+    # Walls joining coordinate
     target = (mapping.closing_bbox_right_start - mapping.closing_bbox_left_start) // 2 + mapping.closing_bbox_left_start
 
     if mapping.close_counter <= mapping.MAX_CLOSE - constants.CLOSED_PAUSE:
+        # Compute walls closing positions
         t = mapping.close_counter / (mapping.MAX_CLOSE - constants.CLOSED_PAUSE)
         left = int(mapping.closing_bbox_left_start * (1 - t) + target * t)
         right = int(mapping.closing_bbox_right_start * (1 - t) + target * t)
-    else: # hold wall closed for a little
+    else: 
+        # Hold wall closed for few frames
         left = right = int(target)
 
     return left, right

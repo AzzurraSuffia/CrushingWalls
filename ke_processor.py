@@ -23,11 +23,8 @@ class KE_Processor:
         # Compute KE
         ke = self._compute_kinetic_energy(landmarks, velocities, masses_vector)
 
-        # Normalize
         if ke is None:
             ke = 0.0
-        else:
-            ke = ke / constants.MAX_KE
 
         return ke
     

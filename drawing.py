@@ -23,6 +23,7 @@ def draw_bounding_rectangle(mask, rectangle, color=(0, 255, 0), thickness=2, fil
 
 # DEBUG
 def draw_starting_region(frame):
+    # Scale coordinates
     x1 = int(constants.CENTER_X_MIN * constants.RESIZE_W)
     y1 = int(constants.CENTER_Y_MIN * constants.RESIZE_H)
     x2 = int(constants.CENTER_X_MAX * constants.RESIZE_W)
@@ -164,7 +165,7 @@ def overlay_logo(frame, logo, center_x, center_y):
     frame[y1:y2, x1:x2] = roi
     return frame
 
-def draw_energy_bar(frame, ke_raw, threshold, ke_display):
+def draw_energy_bar(frame, ke_raw, threshold):
 
     h, w, _ = frame.shape
     bar_height = 25
@@ -180,13 +181,14 @@ def draw_energy_bar(frame, ke_raw, threshold, ke_display):
                   (50, 50, 50),
                   -1)
 
-    # Exponential Moving Average (EMA)
-    alpha = 0.2
-    ke_display = alpha * ke_raw + (1 - alpha) * ke_display
-
+    # Normalize and clamp
+    ke_raw = ke_raw / constants.MAX_KE
+    ke_visual = max(0.0, min(ke_raw, 1.0))
+    threshold = threshold / constants.MAX_KE
+    
     # Energy bar
-    filled_width = int(bar_width * ke_display)
-    color = (0, 200, 0) if ke_display > threshold else (0, 0, 255)
+    filled_width = int(bar_width * ke_visual)
+    color = (0, 200, 0) if ke_visual >= threshold else (0, 0, 255)
 
     cv2.rectangle(frame,
                   (x_start, y_start),
@@ -209,7 +211,7 @@ def draw_energy_bar(frame, ke_raw, threshold, ke_display):
     thickness = 2
 
     # Position text above the bar
-    (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
+    (text_w, _), _ = cv2.getTextSize(text, font, font_scale, thickness)
     text_x = x_start + (bar_width - text_w) // 2
     text_y = y_start - 5  # slightly above the top of the bar
 
@@ -217,7 +219,67 @@ def draw_energy_bar(frame, ke_raw, threshold, ke_display):
     cv2.putText(frame, text, (text_x, text_y), font, font_scale, (0,0,0), thickness+2, cv2.LINE_AA)
     cv2.putText(frame, text, (text_x, text_y), font, font_scale, (255,255,255), thickness, cv2.LINE_AA)
 
-    return frame, ke_display
+    return frame
+
+def draw_survival_bar(frame, time_below_threshold, end_time):
+
+    h, w, _ = frame.shape
+    bar_height = 25
+    margin = 20
+    bar_width = w - 2 * margin
+    x_start = margin
+    y_start = h - bar_height - margin
+
+    # Compute life ratio (1 = safe, 0 = dead)
+    life_ratio = 1.0 - (time_below_threshold / end_time)
+    life_ratio = max(0.0, min(life_ratio, 1.0))
+
+    # Background
+    cv2.rectangle(frame,
+                  (x_start, y_start),
+                  (x_start + bar_width, y_start + bar_height),
+                  (50, 50, 50),
+                  -1)
+
+    # Filled width
+    filled_width = int(bar_width * life_ratio)
+
+    # Smooth color gradient (Green -> Red)
+    red = int((1 - life_ratio) * 255)
+    green = int(life_ratio * 255)
+    color = (0, green, red)
+
+    cv2.rectangle(frame,
+                  (x_start, y_start),
+                  (x_start + filled_width, y_start + bar_height),
+                  color,
+                  -1)
+
+    # Optional: subtle pulse when critical
+    import time
+    if life_ratio < 0.3:
+        pulse = int(20 * abs(np.sin(time.time() * 6)))
+        overlay_color = (0, 0, 255 - pulse)
+        cv2.rectangle(frame,
+                      (x_start, y_start),
+                      (x_start + bar_width, y_start + bar_height),
+                      overlay_color,
+                      2)
+
+    # Label
+    text = "Survival"
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.6
+    thickness = 2
+
+    (text_w, _), _ = cv2.getTextSize(text, font, font_scale, thickness)
+    text_x = x_start + (bar_width - text_w) // 2
+    text_y = y_start - 5
+
+    cv2.putText(frame, text, (text_x, text_y), font, font_scale, (0,0,0), thickness+2, cv2.LINE_AA)
+    cv2.putText(frame, text, (text_x, text_y), font, font_scale, (255,255,255), thickness, cv2.LINE_AA)
+
+    return frame
 
 def draw_message(frame, message, 
                  position = (50, 50), font = cv2.FONT_HERSHEY_SIMPLEX,
@@ -226,6 +288,7 @@ def draw_message(frame, message,
     return cv2.putText(frame, message, position, font, font_scale, color, thickness, cv2.LINE_AA)
 
 def draw_walls(frame, bbox_left, bbox_right, color_left=(255, 0, 0), color_right=(0, 165, 255)):
-    output_frame = cv2.rectangle(frame, (0, 0), (bbox_left, constants.RESIZE_H), color_left, -1)       # left wall
-    output_frame = cv2.rectangle(frame, (bbox_right, 0), (constants.RESIZE_W, constants.RESIZE_H), color_right, -1)  # right wall
+    output_frame = cv2.rectangle(frame, (0, 0), (bbox_left, constants.RESIZE_H), color_left, -1)                        # left wall
+    output_frame = cv2.rectangle(frame, (bbox_right, 0), (constants.RESIZE_W, constants.RESIZE_H), color_right, -1)     # right wall
+
     return output_frame
