@@ -3,9 +3,16 @@ import numpy as np
 import constants
 import masses
 
-class KE_Processor:
+class KEProcessor:
+    """Processes landmark velocities to compute total kinetic energy."""
 
     def __init__(self, velocity_filter):
+        """
+        Initialize the kinetic energy processor.
+
+        Args:
+            velocity_filter: Optional filter object to smooth velocities.
+        """
 
         self.velocity_filter = velocity_filter
 
@@ -13,7 +20,17 @@ class KE_Processor:
         self.prev_time = None
 
     def update(self, landmarks, velocities):
+        """
+        Compute the current kinetic energy from landmarks and velocities.
 
+        Args:
+            landmarks (list): List of current landmark positions.
+            velocities (np.ndarray): Velocity vectors of the landmarks.
+
+        Returns:
+            float: Total kinetic energy. Returns 0.0 if input is invalid.
+        """
+         
         # Mass vector
         if constants.USE_ANTHROPOMETRIC_TABLES:
             masses_vector = masses.create_mass_vector(constants.TOTAL_MASS)
@@ -29,7 +46,18 @@ class KE_Processor:
         return ke
     
     def _compute_kinetic_energy(self, landmarks, velocities, masses=None):
+        """
+        Compute kinetic energy given landmarks, velocities, and masses.
 
+        Args:
+            landmarks (list): Landmark positions.
+            velocities (np.ndarray): Landmark velocity vectors.
+            masses (np.ndarray, optional): Mass of each landmark.
+
+        Returns:
+            float: Total kinetic energy, or None if inputs are invalid.
+        """
+         
         # Ensure landmarks exist
         if landmarks is None or velocities is None:
             return None

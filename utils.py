@@ -2,6 +2,8 @@ import numpy as np
 import constants
 
 def get_bounding_rectangle(rgb_image, landmarks):
+    """Return bounding box [left, right, bottom, top] of landmarks or None."""
+
     if not landmarks or landmarks is None:
         return None
 
@@ -19,6 +21,8 @@ def get_bounding_rectangle(rgb_image, landmarks):
     return bbox
 
 def is_user_ready(frame, landmarks):
+    """Check if user is visible and centered for starting interaction."""
+
     if not landmarks or landmarks is None:
         return False
 
@@ -54,12 +58,14 @@ def is_user_ready(frame, landmarks):
     return all_visible and in_center_x and in_center_y
 
 def compute_wall_positions(mapping):
+    """Compute left and right wall positions during closing animation."""
+
     # Walls joining coordinate
     target = (mapping.closing_bbox_right_start - mapping.closing_bbox_left_start) // 2 + mapping.closing_bbox_left_start
 
-    if mapping.close_counter <= mapping.MAX_CLOSE - constants.CLOSED_PAUSE:
+    if mapping.counters.close <= mapping.thresholds.max_close - constants.CLOSED_PAUSE:
         # Compute walls closing positions
-        t = mapping.close_counter / (mapping.MAX_CLOSE - constants.CLOSED_PAUSE)
+        t = mapping.counters.close / (mapping.thresholds.max_close - constants.CLOSED_PAUSE)
         left = int(mapping.closing_bbox_left_start * (1 - t) + target * t)
         right = int(mapping.closing_bbox_right_start * (1 - t) + target * t)
     else: 

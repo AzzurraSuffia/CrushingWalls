@@ -1,86 +1,107 @@
 from enum import Enum, auto
+from dataclasses import dataclass
+
+
+@dataclass
+class Counters:
+    ready: int = 0
+    energy: int = 0
+    close: int = 0
+
+
+@dataclass
+class Thresholds:
+    max_ready: int
+    max_energy: int
+    max_close: int
+    energy_threshold: float
 
 
 class State(Enum):
-    # auto(): automatically generates increasing integer values to be assignt o states
+    """
+    Enumeration of FSM states for the interactive wall installation.
+    """
     IDLE = auto() 
     PLAYING = auto()
     CLOSING = auto()
-    INTERRUPTION = auto()
 
 
 class InteractionFSM:
+    """
+    Finite State Machine controlling the interactive wall installation.
 
-    def __init__(self, max_count, max_energy, max_close, threshold):
+    Manages transitions between IDLE, PLAYING, and CLOSING
+    states based on user presence, movement energy, and tracking loss.
+    """
+    def __init__(self, max_ready, max_energy, max_close, energy_threshold):
+        """
+        Initialize the FSM with counters and thresholds.
+
+        Args:
+            max_ready (int): Number of frames required for user readiness to start PLAYING.
+            max_energy (int): Number of frames user can stay below energy threshold before CLOSING.
+            max_close (int): Number of frames the CLOSING animation lasts.
+            threshold (float): Minimum energy level to avoid triggering CLOSING state.
+        """
         self.state = State.IDLE
 
-        self.MAX = max_count
-        self.MAX_ENERGY = max_energy
-        self.MAX_CLOSE = max_close
-        self.threshold = threshold
-
-        self.ready_counter = 0
-        self.energy_counter = 0
-        self.disturb_counter = 0
-        self.close_counter = 0
+        self.counters = Counters()
+        self.thresholds = Thresholds(max_ready, max_energy, max_close, energy_threshold)
 
         self.closing_bbox_left_start = None
         self.closing_bbox_right_start = None
 
     def update(self, pose_landmarks, estimated_landmarks, energy, starting_condition_met, bbox_left, bbox_right):
         """
-        Update FSM state based on current inputs.
-        Returns the current state.
+        Update the FSM state based on current user input and system conditions.
+
+        Args:
+            pose_landmarks (list): Detected user landmarks in the current frame.
+            estimated_landmarks (list): None if landmarks were not estimated.
+            energy (float): Current user energy level.
+            starting_condition_met (bool): True if the user meets the starting criteria to begin PLAYING.
+            bbox_left (int): Left coordinate of the user's bounding rectangle.
+            bbox_right (int): Right coordinate of the user's bounding rectangle.
+
+        Returns:
+            State: The current FSM state after evaluation and any transitions.
         """
 
         if self.state == State.PLAYING:
 
-            # Multiple users
-            if len(pose_landmarks) > 1:
-                self.disturb_counter += 1
-                self.energy_counter = 0
-
-                if self.disturb_counter >= self.MAX:
-                    self.disturb_counter = 0
-                    self.state = State.INTERRUPTION
-
             # Landmark detection failed
-            elif not estimated_landmarks:
+            if not estimated_landmarks:
+                self.counters.energy = 0
                 self.state = State.IDLE
 
             # Low energy
-            elif energy < self.threshold:
-                self.energy_counter += 1
-                self.disturb_counter = 0
+            elif energy < self.thresholds.energy_threshold:
+                self.counters.energy += 1
 
-                if self.energy_counter >= self.MAX_ENERGY:
-                    self.energy_counter = 0
+                if self.counters.energy >= self.thresholds.max_energy:
+                    self.counters.energy = 0
                     self.state = State.CLOSING
                     self.closing_bbox_left_start = bbox_left
                     self.closing_bbox_right_start = bbox_right
 
             else:
-                self._reset_activity_counters()
+                self.counters.energy = 0
 
         elif self.state == State.CLOSING:
 
-            self.close_counter += 1
-            if self.close_counter >= self.MAX_CLOSE:
-                self.close_counter = 0
+            self.counters.close += 1
+            if self.counters.close >= self.thresholds.max_close:
+                self.counters.close = 0
                 self.state = State.IDLE
 
-        elif self.state in (State.IDLE, State.INTERRUPTION):
+        elif self.state == State.IDLE:
 
             if starting_condition_met:
-                self.ready_counter += 1
-                if self.ready_counter >= self.MAX:
-                    self.ready_counter = 0
+                self.counters.ready += 1
+                if self.counters.ready >= self.thresholds.max_ready:
+                    self.counters.ready = 0
                     self.state = State.PLAYING
             else:
-                self.ready_counter = 0
+                self.counters.ready = 0
 
         return self.state
-
-    def _reset_activity_counters(self):
-        self.disturb_counter = 0
-        self.energy_counter = 0

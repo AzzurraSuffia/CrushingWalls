@@ -1,8 +1,9 @@
 # General constants
 FPS = 30
-RESIZE_W = 640 # otherwise the screen is too little for visitors
+RESIZE_W = 640
 RESIZE_H = 480
-MAX_MISSED_FRAMES = 5
+VIDEO_PATH = "videos\\offline_demo.mp4"
+LIVE_INPUT = True
 
 # Filters constants
 WALL_CUTOFF = 2.0
@@ -11,11 +12,11 @@ VELOCITY_CUTOFF = 3.0
 VELOCITY_ORDER = 2
 
 # Kinetic energy computation
-TOTAL_MASS = 80 # can mass be estimated somehow?
+TOTAL_MASS = 60
 USE_ANTHROPOMETRIC_TABLES = True
 APPLY_KE_FILTERING = True
-MAX_KE = 100.0  # Adjust based on expected max kinetic energy
-THRESHOLD_KE = 0.1*MAX_KE # Adjust based on expected max kinetic energy
+MAX_KE = 100.0 
+THRESHOLD_KE = 0.08*MAX_KE 
 
 # Mediapipe
 MODEL_PATH="models\\pose_landmarker_lite.task"
@@ -24,11 +25,9 @@ MODEL_PATH="models\\pose_landmarker_lite.task"
 LOGO_PATH="images\\logo.png"
 
 # Mapping 
-MAX_COUNT = FPS
-MAX_ENERGY_SECONDS = 2
-MAX_ENERGY = int(MAX_ENERGY_SECONDS * FPS) 
-MAX_CLOSE_SECONDS = 1
-MAX_CLOSE = int(MAX_CLOSE_SECONDS * FPS) 
+MAX_READY = FPS
+MAX_ENERGY = 2 * FPS
+MAX_CLOSE = FPS 
 CLOSED_PAUSE = 5
 
 # Velocity Decay

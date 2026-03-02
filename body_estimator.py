@@ -5,7 +5,20 @@ import numpy as np
 import constants
 
 class BodyEstimator:
+    """
+    Estimates body landmark velocities and predicts missing landmarks.
+    """
+
     def __init__(self, alpha, max_missing_count=15, apply_filtering=False, velocity_filter=None):
+        """
+        Initialize the BodyEstimator.
+
+        Args:
+            alpha (float): Velocity decay factor for missing frames.
+            max_missing_count (int): Max frames to predict missing landmarks.
+            apply_filtering (bool): Apply optional velocity filtering.
+            velocity_filter: Filter object with a `filter` method.
+        """
         self.prev_velocities = None
         self.prev_time = None
         self.prev_landmarks = None
@@ -18,6 +31,17 @@ class BodyEstimator:
         self.alpha = alpha
 
     def update(self, detection_result):
+        """
+        Update landmark velocities or predict missing ones.
+
+        Args:
+            detection_result: Object containing detected pose_landmarks.
+
+        Returns:
+            velocities (np.ndarray or None): Current landmark velocities.
+            landmarks: Current or predicted landmarks.
+            estimated (bool): True if landmarks were estimated.
+        """
         curr_time = time.time()
         estimated = False
 
@@ -69,6 +93,12 @@ class BodyEstimator:
     
     @staticmethod
     def _first_order_derivative(curr_value, prev_value, curr_time, prev_time):
+        """
+        Compute first-order derivative (velocity) between two frames.
+
+        Returns:
+            np.ndarray: Velocity vector or None if invalid.
+        """
         result = None
         if curr_value is not None and prev_value is not None and curr_time is not None and prev_time is not None:
             dt = curr_time - prev_time
@@ -76,6 +106,16 @@ class BodyEstimator:
         return result
     
     def _predict_missing(self, curr_time):
+        """
+        Predict landmarks and velocities for missing frames.
+
+        Args:
+            curr_time (float): Current timestamp.
+
+        Returns:
+            velocities (np.ndarray): Predicted velocities.
+            landmarks: Predicted landmark positions.
+        """
         dt = curr_time - self.prev_time
 
         # Apply velocity decay
@@ -89,4 +129,5 @@ class BodyEstimator:
             lm.z += v[2] * dt
 
         self.missing_counter += 1
+        
         return velocities, landmarks

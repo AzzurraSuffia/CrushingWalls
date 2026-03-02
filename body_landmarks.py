@@ -1,6 +1,10 @@
 from enum import IntEnum
 
 class BodyLandmarks(IntEnum):
+    """
+    Enumeration of human body landmarks with indices used for pose estimation.
+    Each member corresponds to a specific landmark, e.g., NOSE, LEFT_EYE, LEFT_SHOULDER, etc.
+    """
     NOSE = 0
     LEFT_EYE_INNER = 1
     LEFT_EYE = 2

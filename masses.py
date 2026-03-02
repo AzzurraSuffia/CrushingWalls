@@ -29,6 +29,8 @@ LANDMARK_GROUPS = {
 }
 
 def create_mass_vector(body_mass):
+    """Create a per-landmark mass vector based on body mass and segment fractions."""
+     
     masses = np.zeros(33)
     for segment, indices in LANDMARK_GROUPS.items():
         fraction = MASS_FRACTIONS.get(segment, 0)

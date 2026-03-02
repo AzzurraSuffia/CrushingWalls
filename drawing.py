@@ -3,37 +3,43 @@ import cv2
 
 import constants
 
-# DEBUG
-def draw_bounding_rectangle(mask, rectangle, color=(0, 255, 0), thickness=2, fill=False):
+def draw_bounding_rectangle(frame, rectangle, color=(0, 255, 0), thickness=2, fill=False):
+    """Draw a bounding rectangle (or filled polygon) on the frame."""
+
     if rectangle is None or rectangle.shape != (4, 2):
-        return mask
+        return frame
 
     # Ensure integer coordinates
     pts = np.array([[int(rectangle[i, 0]), int(rectangle[i, 1])] for i in range(4)], dtype=np.int32).reshape((-1, 1, 2))
 
-    # Make a copy to avoid modifying original mask
-    mask_copy = mask.copy()
+    # Make a copy to avoid modifying original frame
+    frame_copy = frame.copy()
 
     if fill:
-        cv2.fillPoly(mask_copy, [pts], color)
+        cv2.fillPoly(frame_copy, [pts], color)
     else:
-        cv2.polylines(mask_copy, [pts], isClosed=True, color=color, thickness=thickness)
+        cv2.polylines(frame_copy, [pts], isClosed=True, color=color, thickness=thickness)
 
-    return mask_copy
+    return frame_copy
 
-# DEBUG
 def draw_starting_region(frame):
+    """Draw the predefined starting region rectangle on the frame."""
+
     # Scale coordinates
     x1 = int(constants.CENTER_X_MIN * constants.RESIZE_W)
     y1 = int(constants.CENTER_Y_MIN * constants.RESIZE_H)
     x2 = int(constants.CENTER_X_MAX * constants.RESIZE_W)
     y2 = int(constants.CENTER_Y_MAX * constants.RESIZE_H)
 
-    frame = cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-    return frame
+    # Make a copy to avoid modifying original frame
+    frame_copy = frame.copy()
+    frame_copy = cv2.rectangle(frame_copy, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-# DEBUG
+    return frame_copy
+
 def draw_landmarks_on_image(rgb_image, pose_landmarks, draw_connections=True):
+    """Draw detected landmarks and optional connections on an RGB image."""
+
     annotated_image = rgb_image.copy()
 
     # Check if any poses were detected
@@ -49,7 +55,7 @@ def draw_landmarks_on_image(rgb_image, pose_landmarks, draw_connections=True):
 
             # Draw connections if requested
             if draw_connections:
-                # Define the typical pose connections (subset)
+                # Define pose connections (subset)
                 POSE_CONNECTIONS = [
                     (0, 1), (1, 2), (2, 3), (3, 7),  # Head/neck
                     (0, 4), (4, 5), (5, 6), (6, 8),  # Other side
@@ -61,8 +67,9 @@ def draw_landmarks_on_image(rgb_image, pose_landmarks, draw_connections=True):
 
     return annotated_image
 
-# DEBUG
 def stack_images_horizontal(images, scale=1.0):
+    """Stack multiple images horizontally with optional scaling."""
+
     resized_images = []
     for img in images:
         if len(img.shape) == 2:  # grayscale
@@ -71,8 +78,9 @@ def stack_images_horizontal(images, scale=1.0):
         resized_images.append(img)
     return cv2.hconcat(resized_images)
 
-# DEBUG
 def draw_cv_graph(history, landmarks_history, estimated, width=640, height=480, max_value = 2.0, fps = 25, window_length = 5, y_label="y", threshold = 30):
+    """Draw a simple time-series graph of landmark or energy history with threshold."""
+
     graph = np.ones((height, width, 3), dtype=np.uint8) * 255  # white background
 
     # Axes
@@ -133,6 +141,8 @@ def draw_cv_graph(history, landmarks_history, estimated, width=640, height=480, 
     return graph
 
 def overlay_logo(frame, logo, center_x, center_y):
+    """Overlay a logo image onto the frame at the given center position."""
+
     h_logo, w_logo = logo.shape[:2]
 
     # Compute ROI coordinates in frame
@@ -166,6 +176,7 @@ def overlay_logo(frame, logo, center_x, center_y):
     return frame
 
 def draw_energy_bar(frame, ke_raw, threshold):
+    """Draw an energy bar on the frame with threshold indicator."""
 
     h, w, _ = frame.shape
     bar_height = 25
@@ -222,6 +233,7 @@ def draw_energy_bar(frame, ke_raw, threshold):
     return frame
 
 def draw_survival_bar(frame, time_below_threshold, end_time):
+    """Draw a survival bar indicating remaining time before walls close."""
 
     h, w, _ = frame.shape
     bar_height = 25
@@ -281,13 +293,9 @@ def draw_survival_bar(frame, time_below_threshold, end_time):
 
     return frame
 
-def draw_message(frame, message, 
-                 position = (50, 50), font = cv2.FONT_HERSHEY_SIMPLEX,
-                 font_scale = 0.8, color = (0, 0, 255), thickness = 2):
-
-    return cv2.putText(frame, message, position, font, font_scale, color, thickness, cv2.LINE_AA)
-
 def draw_walls(frame, bbox_left, bbox_right, color_left=(255, 0, 0), color_right=(0, 165, 255)):
+    """Draw left and right walls around the user's bounding rectangle."""
+
     output_frame = cv2.rectangle(frame, (0, 0), (bbox_left, constants.RESIZE_H), color_left, -1)                        # left wall
     output_frame = cv2.rectangle(frame, (bbox_right, 0), (constants.RESIZE_W, constants.RESIZE_H), color_right, -1)     # right wall
 
