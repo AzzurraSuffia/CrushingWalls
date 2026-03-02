@@ -50,7 +50,7 @@ body_estimator = BodyEstimator(constants.ALPHA, apply_filtering=True, velocity_f
 
 # Selecting the input source (either a file or a video camera)
 if not constants.LIVE_INPUT:
-    path = constants.VIDEO_PATH
+    path = constants.VIDEO_PATH + constants.VIDEO_NAME
     cap = cv2.VideoCapture(path)
     print(f"Processing file: {path}.")
 else:

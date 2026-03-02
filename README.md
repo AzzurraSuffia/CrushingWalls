@@ -26,7 +26,7 @@ git clone https://github.com/AzzurraSuffia/CrushingWalls.git
 ## Run the application
 To run the project:
 
-1. **Navigate to the project folder**:
+1. **Navigate to the project folder**:<br><br>
     ```bash
     cd <repository_folder>
     ```
@@ -34,17 +34,18 @@ To run the project:
     - Live camera input: <br>
     Make sure the `LIVE_INPUT` constant in `config/constants.py` is set to `True`.
     - Pre-recorded video input: <br>
-        1. Copy the video file into the `videos` folder.
-        2. Set the `VIDEO_PATH` constant in `config/constants.py` to the relative path of your video, e.g.: <br>
+        1. Make sure the `LIVE_INPUT` constant in `config/constants.py` is set to `False`.
+        2. Copy the video file into the `videos` folder.
+        3. Set `VIDEO_NAME` in `config/constants.py` to the filename of the video, e.g.: <br><br>
             ```bash
-            VIDEO_PATH = "videos\\my_video.mp4"
+            VIDEO_NAME = "my_video.mp4"
             ```
 3. **Set camera parameters and background**: <br>
-    - Adjust the `FPS` constant in `config/constants.py` to match your camera’s frame rate.
-    - To use a fixed background image, set it in `main.py` (resize the image to 640×480). Otherwise, the system will automatically capture the first frame as the background.
+    - Adjust the `FPS` constant in `config/constants.py` to match your camera’s frame rate. The default value is 30 fps.
+    - To use a fixed background image, set it in `main.py` (resize the image to 640×480) and set `first_frame_set` to `True`. Otherwise, the system will automatically capture the first frame as the background.
 4. **(Optional) Enable debug mode**:<br>
 Set the `DEBUG` constant in `config/constants.py` to `True` if you want extra debug output.
-5. **Run the main script**: <br>
+5. **Run the main script**: <br><br>
     ```bash
     python src/main.py
     ```

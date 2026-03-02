@@ -1,9 +1,14 @@
 # General constants
 FPS = 30
+VIDEO_PATH = "videos\\"
+VIDEO_NAME = "offline_demo.mp4"
+LIVE_INPUT = False
 RESIZE_W = 640
 RESIZE_H = 480
-VIDEO_PATH = "videos\\offline_demo.mp4"
-LIVE_INPUT = False
+
+# Debug constants
+DEBUG = True
+PLOT_WINDOW_SECONDS = 5
 
 # Filters constants
 WALL_CUTOFF = 2.0
@@ -32,10 +37,6 @@ CLOSED_PAUSE = 5
 
 # Velocity Decay
 ALPHA = 0.9
-
-# Debug constants
-DEBUG = True
-PLOT_WINDOW_SECONDS = 5
 
 # Center region
 CENTER_X_MIN = 0.40
