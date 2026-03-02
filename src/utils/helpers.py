@@ -1,5 +1,5 @@
 import numpy as np
-import constants
+import config.constants as constants
 
 def get_bounding_rectangle(rgb_image, landmarks):
     """Return bounding box [left, right, bottom, top] of landmarks or None."""

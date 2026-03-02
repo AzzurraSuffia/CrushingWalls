@@ -7,14 +7,14 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-import utils
-import drawing
-from filters import ButterworthMultichannel
-from body_landmarks import BodyLandmarks
-from interaction_fsm import InteractionFSM, State
-from ke_processor import KEProcessor
-from body_estimator import BodyEstimator
-import constants
+import utils.helpers as helpers
+import utils.drawing as drawing
+from motion.filters import ButterworthMultichannel
+from motion.body_landmarks import BodyLandmarks
+from control.interaction_fsm import InteractionFSM, State
+from motion.ke_processor import KEProcessor
+from motion.body_estimator import BodyEstimator
+import config.constants as constants
 
 # Initialization
 background = None
@@ -91,7 +91,7 @@ while True:
     velocities, landmarks, estimated = body_estimator.update(detection_result)
     ke = ke_processor.update(landmarks, velocities)
         
-    bbox = utils.get_bounding_rectangle(current_frame, landmarks)
+    bbox = helpers.get_bounding_rectangle(current_frame, landmarks)
     if bbox is not None:
         smooth_bbox = wall_butterworth_filter.filter([bbox[0], bbox[1]])
         bbox_left = int(smooth_bbox[0])
@@ -103,7 +103,7 @@ while True:
         landmarks_history.append(estimated)
 
     # ------------------ Direct Mapping ------------------
-    is_ready = utils.is_user_ready(current_frame, landmarks)
+    is_ready = helpers.is_user_ready(current_frame, landmarks)
     current_state = mapping.update(detection_result.pose_landmarks, landmarks, ke, is_ready, bbox_left, bbox_right) 
 
     # ------------------ Layer 2 (Output) ------------------
@@ -124,7 +124,7 @@ while True:
             output_frame = drawing.draw_survival_bar(output_frame, mapping.counters.energy, constants.MAX_ENERGY)
 
         case State.CLOSING:
-            left, right = utils.compute_wall_positions(mapping)
+            left, right = helpers.compute_wall_positions(mapping)
             output_frame = background.copy()
             output_frame = drawing.draw_walls(output_frame, left, right)
 

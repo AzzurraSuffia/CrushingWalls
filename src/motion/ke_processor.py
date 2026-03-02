@@ -1,7 +1,7 @@
 import numpy as np
 
-import constants
-import masses
+import config.constants as constants
+import motion.masses as masses
 
 class KEProcessor:
     """Processes landmark velocities to compute total kinetic energy."""

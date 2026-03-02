@@ -2,7 +2,7 @@ import copy
 import time
 import numpy as np
 
-import constants
+import config.constants as constants
 
 class BodyEstimator:
     """

@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-import constants
+import config.constants as constants
 
 def draw_bounding_rectangle(frame, rectangle, color=(0, 255, 0), thickness=2, fill=False):
     """Draw a bounding rectangle (or filled polygon) on the frame."""

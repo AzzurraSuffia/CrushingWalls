@@ -3,7 +3,7 @@ FPS = 30
 RESIZE_W = 640
 RESIZE_H = 480
 VIDEO_PATH = "videos\\offline_demo.mp4"
-LIVE_INPUT = True
+LIVE_INPUT = False
 
 # Filters constants
 WALL_CUTOFF = 2.0
