@@ -104,7 +104,7 @@ while True:
 
     # ------------------ Direct Mapping ------------------
     is_ready = helpers.is_user_ready(current_frame, landmarks)
-    current_state = mapping.update(detection_result.pose_landmarks, landmarks, ke, is_ready, bbox_left, bbox_right) 
+    current_state = mapping.update(landmarks, ke, is_ready, bbox_left, bbox_right) 
 
     # ------------------ Layer 2 (Output) ------------------
     match current_state:

@@ -50,12 +50,11 @@ class InteractionFSM:
         self.closing_bbox_left_start = None
         self.closing_bbox_right_start = None
 
-    def update(self, pose_landmarks, estimated_landmarks, energy, starting_condition_met, bbox_left, bbox_right):
+    def update(self, estimated_landmarks, energy, starting_condition_met, bbox_left, bbox_right):
         """
         Update the FSM state based on current user input and system conditions.
 
         Args:
-            pose_landmarks (list): Detected user landmarks in the current frame.
             estimated_landmarks (list): None if landmarks were not estimated.
             energy (float): Current user energy level.
             starting_condition_met (bool): True if the user meets the starting criteria to begin PLAYING.

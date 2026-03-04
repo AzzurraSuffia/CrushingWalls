@@ -21,7 +21,7 @@ TOTAL_MASS = 60
 USE_ANTHROPOMETRIC_TABLES = True
 APPLY_KE_FILTERING = True
 MAX_KE = 100.0 
-THRESHOLD_KE = 0.1*MAX_KE # 0.08 for offline demo
+THRESHOLD_KE = 0.1*MAX_KE
 
 # Mediapipe
 MODEL_PATH = "models\\pose_landmarker_lite.task"

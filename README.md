@@ -1,5 +1,5 @@
 # CrushingWalls
-**CrushingWalls** is an interactive system. It displays two virtual walls on the right and left sides of a visitor’s bounding rectangle, attempting to crush their body. The visitor can expand this rectangle to gradually reveal the background of the room. When the visitor’s energy falls below a predefined threshold, the visitor disappears and the two walls collapse toward the center, merging in the middle.
+**CrushingWalls** is an interactive, video-based system. It uses an RGB camera and a screen placed on top of each other, or close to each other, in a fixed position. When a visitor is detected by the camera, the screen displays two virtual walls on the right and left sides of their bounding rectangle, attempting to crush their body. The visitor can expand this rectangle to gradually reveal the background. When their energy falls below a predefined threshold, the visitor disappears, and the two walls collapse toward the center, merging in the middle.
 
 ## Requirements
 
@@ -51,3 +51,6 @@ Set the `DEBUG` constant in `config/constants.py` to `True` if you want extra de
     ```
 6. **Start interacting**: <br>
 If live input is selected, position yourself in the center of the camera frame with your head and torso fully visible to start the interaction.
+
+## Limitations 
+As the system is based on MediaPipe BlazePose GHUM 3D, it currently supports the detection of only one user at a time.
