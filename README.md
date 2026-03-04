@@ -1,5 +1,5 @@
 # CrushingWalls
-**CrushingWalls** is an interactive, video-based system. It uses an RGB camera and a screen placed on top of each other, or close to each other, in a fixed position. When a visitor is detected by the camera, the screen displays two virtual walls on the right and left sides of their bounding rectangle, attempting to crush their body. The visitor can expand this rectangle to gradually reveal the background. When their energy falls below a predefined threshold, the visitor disappears, and the two walls collapse toward the center, merging in the middle.
+**CrushingWalls** is an interactive, video-based system. It uses an RGB camera to sense the visitor’s movements and a screen to display visuals, with both devices placed close together in a fixed position. When a visitor is detected by the camera, the screen displays two virtual walls on the right and left sides of their bounding rectangle, attempting to crush their body. The visitor can expand this rectangle to gradually reveal the background. When their energy falls below a predefined threshold, the visitor disappears from the screen, and the two walls collapse toward the center, merging in the middle.
 
 ## Requirements
 
